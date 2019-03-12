@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>EDPDotNet</AssemblyName>
+    <RootNamespace>EDPDotNet</RootNamespace>
+    <Authors>Florian Sakowski</Authors>
+    <Company />
+    <Product>EDP.NET</Product>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>EDPDotNet.Tool</AssemblyName>
+    <RootNamespace>EDPDotNet.Tool</RootNamespace>
+    <Authors>Florian Sakowski</Authors>
+    <Company />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EDP.NET\EDP.NET.csproj" />
+  </ItemGroup>
+
+</Project>
