@@ -89,10 +89,10 @@ namespace EDPDotNet.EPI {
         /// <param name="port"></param>
         /// <param name="password"></param>
         public EPIConnection(string host, string mandant, ushort port, string password) {
-            this.host = host ?? throw new ArgumentNullException("host must not be null");
-            this.mandant = mandant ?? throw new ArgumentNullException("mandant must not be null");
+            this.host = host ?? throw new ArgumentNullException("host");
+            this.mandant = mandant ?? throw new ArgumentNullException("mandant");
             this.port = port;
-            this.password = password ?? throw new ArgumentNullException("password must not be null");
+            this.password = password ?? throw new ArgumentNullException("password");
         }
 
         /// <summary>
@@ -101,6 +101,8 @@ namespace EDPDotNet.EPI {
         public void Open() {
             if (connected)
                 Close();
+
+            ActionId = 1;
 
             try {
                 client = new TcpClient(host, port);
@@ -118,11 +120,11 @@ namespace EDPDotNet.EPI {
             // abgeholt, wird sie mit beim nächsten Befehl empfangen
             EPICommand status = stream.ReadNextCommand();
 
-            stream.Write(createChangeMandantCommand());
+            stream.Write(CreateChangeMandantCommand());
             if (stream.Read() != EPIResponseType.Acknowledge)
                 throw new EPIException("change mandant failed", stream.ResultMessage);
 
-            stream.Write(createLogOnCommand());
+            stream.Write(CreateLogOnCommand());
             if (stream.Read() != EPIResponseType.Acknowledge)
                 throw new EPIException("logon failed", stream.ResultMessage);
 
@@ -134,7 +136,7 @@ namespace EDPDotNet.EPI {
         /// </summary>
         public void Close() {
             if (connected) {
-                stream.Write(createEndCommand());
+                stream.Write(CreateEndCommand());
                 connected = false;
 
                 if (stream.Read() != EPIResponseType.End)
@@ -150,7 +152,7 @@ namespace EDPDotNet.EPI {
 
         public void SetOption(string name, string value) {
             if (String.IsNullOrEmpty(name))
-                throw new ArgumentNullException("name must not be null");
+                throw new ArgumentNullException("name");
 
             if (!TrySetOption(name, value))
                 throw new EPIException("edp option couldn't be set", stream.ResultMessage);
@@ -170,7 +172,7 @@ namespace EDPDotNet.EPI {
 
         public string GetOptionValue(string name) {
             if (String.IsNullOrEmpty(name))
-                throw new ArgumentNullException("name must not be null");
+                throw new ArgumentNullException("name");
 
             EPICommand sho = new CommandBuilder()
                 .SetCMDWord(CommandWords.Session.ShowOptions)
@@ -183,27 +185,36 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("edp option could'nt be received", stream.ResultMessage);
 
-            DataSet ds = DataSet.Fill(stream);
+            FieldList fieldList = new FieldList {
+                new Field("name"),
+                new Field("value")
+            };
+
+            DataSet ds = DataSet.Fill(stream, fieldList);
 
             if (ds.Count == 0)
                 throw new EPIException("server response contains no data about the requested option value");
 
-            return ds[0][name];
+            return ds[0]["value"];
         }
 
-        public DataSet ExecuteQuery(string select, string fieldList, int limit, int offset, string varLang) {
+        public DataSet ExecuteQuery(string select, FieldList fieldList, int limit, int offset, string varLang) {
+            if (fieldList == null)
+                throw new ArgumentNullException("fieldList");
+
             EPICommand exq = new CommandBuilder()
                .SetCMDWord(CommandWords.Selecting.ExecuteQuery)
                .SetActionId(ActionId)
                .AddField(select)
-               .AddField(fieldList)
-               .AddField(limit.ToString())
-               .AddField(offset.ToString())
+               .AddField(fieldList.ToString())
+               .AddField(limit == 0 ? String.Empty : limit.ToString())
+               .AddField(offset == 0 ? String.Empty : offset.ToString())
                .AddField(String.Empty) // Edit-TID
                .AddField(String.Empty) // Edit RowNo
                .AddField(String.Empty) // Edit FieldName
                .AddField(String.Empty) // Timeout
-               .AddField("0") // Metadaten
+               // Metadaten nur dann aktivieren, wenn keine Feldliste vorhanden ist
+               .AddField(fieldList.Count == 0 ? "1" : "0")
                .AddField(varLang)
                .Build();
 
@@ -212,10 +223,27 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("query execution failed", stream.ResultMessage);
 
-            return DataSet.Fill(stream);
+            return DataSet.Fill(stream, fieldList);
         }
 
-        private EPICommand createChangeMandantCommand() {
+        public DataSet GetNextRecord(FieldList fieldList) {
+            if (fieldList == null)
+                throw new ArgumentNullException("fieldList");
+
+            EPICommand gnr = new CommandBuilder()
+                .SetCMDWord(CommandWords.Selecting.GetNextRecord)
+                .SetActionId(ActionId)
+                .Build();
+
+            stream.Write(gnr);
+
+            if (stream.Read() != EPIResponseType.Data)
+                throw new EPIException("get next record failed", stream.ResultMessage);
+
+            return DataSet.Fill(stream, fieldList);
+        }
+
+        private EPICommand CreateChangeMandantCommand() {
             return new CommandBuilder()
                 .SetCMDWord(CommandWords.Session.ChangeMandant)
                 .SetActionId(ActionId)
@@ -223,7 +251,7 @@ namespace EDPDotNet.EPI {
                 .Build();
         }
 
-        private EPICommand createLogOnCommand() {
+        private EPICommand CreateLogOnCommand() {
             return new CommandBuilder()
                .SetCMDWord(CommandWords.Session.Logon)
                .SetActionId(ActionId)
@@ -240,7 +268,7 @@ namespace EDPDotNet.EPI {
                .Build();
         }
 
-        private EPICommand createEndCommand() {
+        private EPICommand CreateEndCommand() {
             return new CommandBuilder()
                .SetCMDWord(CommandWords.Session.End)
                .Build();

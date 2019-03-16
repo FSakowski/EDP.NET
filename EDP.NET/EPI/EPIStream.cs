@@ -27,7 +27,7 @@ namespace EDPDotNet.EPI {
             }
 
             set {
-                encoding = value ?? throw new ArgumentNullException("Encoding must not be null");
+                encoding = value ?? throw new ArgumentNullException("encoding");
             }
         }
 
@@ -74,14 +74,14 @@ namespace EDPDotNet.EPI {
         /// </summary>
         /// <param name="stream">Netzwerkstream, dieser muss vorher geöffnet werden. Geschlossen wird der Stream automatisch oder über Aufruf der Close-Methode.</param>
         public EPIStream(NetworkStream stream) {
-            this.stream = stream ?? throw new ArgumentNullException("stream must not be null");
+            this.stream = stream ?? throw new ArgumentNullException("stream");
             resultMessage = CommandBuilder.CreateEmptyCommand();
         }
 
         #region Decode / Encode
         public string DecodeCommand(EPICommand cmd) {
             if (cmd == null)
-                throw new ArgumentNullException("cmd must not be null");
+                throw new ArgumentNullException("cmd");
 
             if (String.IsNullOrEmpty(cmd.CMDWord) || cmd.CMDWord.Length > 3)
                 throw new EPIException("epi command word is invalid", cmd);
@@ -125,9 +125,7 @@ namespace EDPDotNet.EPI {
 
             // TID einlesen
             if (fields.Length > 1) {
-                uint actionid;
-
-                if (UInt32.TryParse(fields[1], out actionid)) {
+                if (UInt32.TryParse(fields[1], out uint actionid)) {
                     cmdBuilder.SetActionId(actionid);
                 } else {
                     throw new EPIException("action id (" + fields[1] + ") is invalid from response " + response);
@@ -173,10 +171,10 @@ namespace EDPDotNet.EPI {
             byte[] data = new byte[maxBufferSize];
             string prevResponse = String.Empty;
 
-            string response = read();
+            string response = ReadLine();
 
             int index = response.IndexOf(endCommandSign, 0);
-            return readResponse(response, 0, index == -1 ? response.Length : index + 1);
+            return ReadResponse(response, 0, index == -1 ? response.Length : index + 1);
         }
 
         /// <summary>
@@ -189,7 +187,7 @@ namespace EDPDotNet.EPI {
             resultMessage = CommandBuilder.CreateEmptyCommand();
 
             do {
-                string response = read();
+                string response = ReadLine();
 
                 // im Response können 1 bis n Nachrichten enthalten sein
                 int offset = 0;
@@ -199,8 +197,8 @@ namespace EDPDotNet.EPI {
                     index = response.IndexOf(endCommandSign, offset);
 
                     if (index >= 0) {
-                        EPICommand cmd = readResponse(response, offset, index);
-                        handleEPICommand(cmd);
+                        EPICommand cmd = ReadResponse(response, offset, index);
+                        HandleEPICommand(cmd);
 
                         if (type == EPIResponseType.Undefined)
                             type = EPIResponseTypeHelper.GetTypeOf(cmd);
@@ -220,7 +218,7 @@ namespace EDPDotNet.EPI {
         /// die Antwort erst in eine Zeichenkette umgewandelt wird, wenn alle Pakete empfangen wurden.
         /// </summary>
         /// <returns></returns>
-        private string read() {
+        private string ReadLine() {
             byte[] data = new byte[maxBufferSize];
 
             using (MemoryStream ms = new MemoryStream()) {
@@ -239,7 +237,7 @@ namespace EDPDotNet.EPI {
             }
         }
 
-        private EPICommand readResponse(string response, int offset, int endIndex) {
+        private EPICommand ReadResponse(string response, int offset, int endIndex) {
 
 
             string trimedResponse = response.Substring(offset, endIndex - offset);
@@ -255,10 +253,10 @@ namespace EDPDotNet.EPI {
             return EncodeCommand(trimedResponse);
         }
 
-        private void handleEPICommand(EPICommand cmd) {
+        private void HandleEPICommand(EPICommand cmd) {
             switch (cmd.CMDWord) {
                 case CommandWords.Responses.StatusMessage:
-                    printStatusMessage(cmd);
+                    PrintStatusMessage(cmd);
                     break;
 
                 case CommandWords.Responses.Acknowledge:
@@ -314,7 +312,7 @@ namespace EDPDotNet.EPI {
             statusMessageWriter = writer;
         }
 
-        private void printStatusMessage(EPICommand cmd) {
+        private void PrintStatusMessage(EPICommand cmd) {
             if (statusMessageWriter != null) {
                 statusMessageWriter.WriteLine("Status: {0}", cmd[CommandFields.Responses.S.MessageText]);
             }
@@ -327,15 +325,15 @@ namespace EDPDotNet.EPI {
         }
 
         public void Dispose() {
-            dispose(true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         ~EPIStream() {
-            dispose(false);
+            Dispose(false);
         }
 
-        private void dispose(bool disposing) {
+        private void Dispose(bool disposing) {
             if (disposing) {
                 stream.Close();
             }

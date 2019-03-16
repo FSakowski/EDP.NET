@@ -6,7 +6,7 @@ namespace EDPDotNet.EPI
 {
     public class EPIException : Exception
     {
-        public EPICommand cmd {
+        public EPICommand Cmd {
             get;
         }
 
@@ -17,22 +17,22 @@ namespace EDPDotNet.EPI
         }
 
         public EPIException(String message, EPICommand cmd) : base(message) {
-            this.cmd = cmd;
+            this.Cmd = cmd;
         }
 
         public EPIException(String message, Exception inner) : base (message, inner) {
         }
 
         public EPIException(String message, EPICommand cmd, Exception inner) : base(message, inner) {
-            this.cmd = cmd;
+            this.Cmd = cmd;
         }
 
         public override string Message {
             get {
-                if (cmd == null)
+                if (Cmd == null)
                     return base.Message;
 
-                return base.Message + ", CMD: " + cmd;
+                return base.Message + ", CMD: " + Cmd;
             }
         }
     }

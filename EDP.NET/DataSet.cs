@@ -6,6 +6,8 @@ using System.Text;
 namespace EDPDotNet {
     public class DataSet : List<Record> {
 
+        private FieldList fieldList;
+
         public uint ActionId {
             get;
             private set;
@@ -28,6 +30,26 @@ namespace EDPDotNet {
             get;
             private set;
         }
+
+        /// <summary>
+        /// Schätzwert, wieviele Datensätze gefunden wurden.
+        /// </summary>
+        public uint EstimatedRecordsCount {
+            get;
+            private set;
+        }
+
+        public FieldList FieldList {
+            get {
+                if (fieldList == null)
+                    fieldList = new FieldList();
+
+                return fieldList;
+            }
+            private set {
+                fieldList = value;
+            }
+        }
         
         /// <summary>
         /// Liest aus eine Warteschlange von EPI-Kommandos nacheinander die Daten im Form von
@@ -36,13 +58,12 @@ namespace EDPDotNet {
         /// </summary>
         /// <param name="cmds"></param>
         /// <returns></returns>
-        public static DataSet Fill(Queue<EPICommand> cmds) {
+        public static DataSet Fill(Queue<EPICommand> cmds, FieldList fieldList) {
             if (cmds == null)
-                throw new ArgumentNullException("cmds must not be null");
+                throw new ArgumentNullException("cmds");
 
             DataSet result = new DataSet();
-
-            string lastField = String.Empty;
+            Field lastField = null;
             Record lastRecord = null;
 
             while(cmds.Count > 0) {
@@ -50,30 +71,45 @@ namespace EDPDotNet {
                 bool data = CommandWords.Responses.Data.Equals(cmd.CMDWord);
                 bool continuation = CommandWords.Responses.DataContinuation.Equals(cmd.CMDWord);
 
-                if (CommandWords.Responses.BeginOfData.Equals(cmd.CMDWord)) {
+                if (CommandWords.Responses.BeginOfData == cmd.CMDWord) {
                     result.ActionId = cmd.ActionId;
+                    string numRecords = cmd[CommandFields.Responses.BOD.NumRecordsTotal];
+
+                    if (!String.IsNullOrEmpty(numRecords))
+                        result.EstimatedRecordsCount = UInt32.Parse(numRecords);
                 }
 
+                if (CommandWords.Responses.MetaData == cmd.CMDWord) {
+                    // RDP mit unterschiedlichen Variablentabellen wird aktuell nicht untersützt
+                    if (result.Count > 0)
+                        throw new NotSupportedException("Server responds with meta data after sending data commands. Subsequent changes of field lists are not yet supported.");
+
+                    SetMetaData(fieldList, cmd);
+                }
+
+                // Datenforsetzung, erstes Fragment zum letzen Feldwert hinzufügen
                 if (continuation) {
                     string fragment = cmd[0];
-                    if (lastRecord != null)
+                    if (lastRecord != null && lastField != null)
                         lastRecord[lastField] = lastRecord[lastField] + fragment;
 
                     continuation = true;
                 }
 
+                // Datenzeile
                 if (data || continuation) {
                     Record rec = new Record();
-                    lastField = fillDataSet(rec, cmd, continuation ? 1 : 0);
+                    lastField = FillDataSet(rec, cmd, fieldList, continuation ? 1 : 0);
                     result.Add(rec);
 
                     if (!cmd.Completed)
                         lastRecord = rec;
                 }
 
-                if (CommandWords.Responses.EndOfData.Equals(cmd.CMDWord)) {
-                    result.Success = Utiltities.ToBool(cmd[CommandFields.Responses.EOD.OKFlag]);
-                    result.EOF = Utiltities.ToBool(cmd[CommandFields.Responses.EOD.EOFFlag]);
+                if (CommandWords.Responses.EndOfData == cmd.CMDWord) {
+                    result.Success = Utilities.ToBool(cmd[CommandFields.Responses.EOD.OKFlag]);
+                    result.EOF = Utilities.ToBool(cmd[CommandFields.Responses.EOD.EOFFlag]);
+                    result.FieldList = new FieldList(fieldList);
                     return result;
                 }
             }
@@ -81,23 +117,38 @@ namespace EDPDotNet {
             throw new EPIException("Server has not sent an end-of-data command. Data query was probably canceled.");
         }
 
-        private static string fillDataSet(Dictionary<string, string> record, EPICommand data, int offset) {
-            string lastField = String.Empty;
+        private static void SetMetaData(FieldList fieldList, EPICommand data) {
+            MetaDataTypeHelper.TryParse(data[CommandFields.Responses.DM.MetaDataType], out MetaDataType type);
 
-            string fieldName = String.Empty;
+            // neue nicht untersützte Metadaten ignorieren
+            if (type == MetaDataType.Undefined)
+                return;
+
+            for (int i = 1; i < data.Fields.Length; i++) {
+                string value = data[i];
+
+                if (type == MetaDataType.Name && i >= fieldList.Count) {
+                    // Feld noch nicht in der Feldliste vorhanden
+                    fieldList.Add(new Field(value));
+                } else if (i < fieldList.Count) {
+                    Field f = fieldList[i];
+                    f.SetMetaData(type, value);
+                }
+            }
+        }
+
+        private static Field FillDataSet(IDictionary<Field, string> record, EPICommand data, FieldList fieldList, int offset) {
+            Field lastField = null;
             string fieldValue;
-            int mod = 0;
             
             for(int i = offset; i < data.Fields.Length; i++) {
-                if (mod++ % 2 == 0) {
-                    fieldName = data[i];
-                    fieldValue = String.Empty;
-                } else {
+                if (i < fieldList.Count) {
+                    Field f = fieldList[i];
                     fieldValue = data[i];
-                    record.Add(fieldName, fieldValue);
-                }
+                    record.Add(f, fieldValue);
 
-                lastField = fieldName;
+                    lastField = f;
+                }
             }
 
             return lastField;

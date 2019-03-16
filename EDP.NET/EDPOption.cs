@@ -45,6 +45,41 @@ namespace EDPDotNet {
 
         static EDPOption() {
             predefinedValues = new Dictionary<string, EDPOption>();
+            predefinedValues.Add("NUMMODE", NumMode);
+            predefinedValues.Add("DECIMALPOINT", DecimalPoint);
+            predefinedValues.Add("BOOLMODE", BoolMode);
+            predefinedValues.Add("ENUMMODE", EnumMode);
+            predefinedValues.Add("VERWMODE", RefMode);
+            predefinedValues.Add("DATEMODE", DateMode);
+            predefinedValues.Add("FTMODE", FreeTextMode);
+            predefinedValues.Add("CHARSET", Charset);
+            predefinedValues.Add("FLDSEP", FieldSeparator);
+            predefinedValues.Add("FLDSEPSUBST", FieldSubstitution);
+            predefinedValues.Add("ESCAPE", EscapeChar);
+            predefinedValues.Add("NEWLINE", NewLine);
+            predefinedValues.Add("CARRIAGE", Carriage);
+            predefinedValues.Add("NULBYTE", NullByte);
+            predefinedValues.Add("LINEBREAK", LineBreak);
+            predefinedValues.Add("CONTLINES", ContinueLines);
+            predefinedValues.Add("SUBSTMODE", SubstitutionMode);
+            predefinedValues.Add("TRIMVALUES", TrimValues);
+            predefinedValues.Add("TRUNCTEXT", TruncText);
+            predefinedValues.Add("AUTOROUND", AutoRound);
+            predefinedValues.Add("ECHOMODE", EchoMode);
+            predefinedValues.Add("UPDATEMODE", UpdateMode);
+            predefinedValues.Add("STOREROWMODE", StoreRowMode);
+            predefinedValues.Add("FOPMODE", FOPMode);
+            predefinedValues.Add("LANG", Language);
+            predefinedValues.Add("VARLANG", VarLanguage);
+            predefinedValues.Add("SHOWNOTES", ShowNotes);
+            predefinedValues.Add("SHOWTEXT", ShowText);
+            predefinedValues.Add("LONGLOCKMSG", LongLockMessage);
+            predefinedValues.Add("LOCKBEHAVIOR", LockBehaviour);
+            predefinedValues.Add("PROGRESS", Progress);
+            predefinedValues.Add("CHANGENOTIFY", ChangeNotify);
+            predefinedValues.Add("DIALOGMODE", DialogMode);
+            predefinedValues.Add("CONTEXT", Context);
+            predefinedValues.Add("OTPWUSER", OneTimePassword);
         }
 
         private EDPOption(string value) {
@@ -55,7 +90,7 @@ namespace EDPDotNet {
             if (String.IsNullOrEmpty(value))
                 throw new FormatException($"invalid value for type {nameof(EDPOption)}");
 
-            string key = value.ToLower();
+            string key = value.ToUpper();
             if (!predefinedValues.ContainsKey(key))
                 throw new FormatException($"invalid value for type {nameof(EDPOption)}");
 

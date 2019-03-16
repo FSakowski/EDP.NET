@@ -41,6 +41,21 @@ namespace EDPDotNet.EPI {
                 public const ushort Context = 2;
             }
 
+            /// <summary>
+            /// Begin of Data
+            /// </summary>
+            public static class BOD {
+                public const ushort NumRecords = 0;
+                public const ushort NumRecordsTotal = 1;
+            }
+
+            public static class DM {
+                public const ushort MetaDataType = 0;
+            }
+
+            /// <summary>
+            /// End of data
+            /// </summary>
             public static class EOD {
                 public const ushort OKFlag = 0;
                 public const ushort NumRecords = 1;

@@ -11,7 +11,7 @@ namespace EDPDotNet {
 
         public EPIConnection Conection {
             get {
-                ensureOpenConnection();
+                EnsureOpenConnection();
                 return connection;
             }
         }
@@ -22,25 +22,32 @@ namespace EDPDotNet {
             connection = new EPIConnection(host, mandant, port, password);
         }
 
-        private void ensureOpenConnection() {
+        private void EnsureOpenConnection() {
             if (!connection.Connected)
                 connection.Open();
         }
 
         public string GetOptionValue(EDPOption option) {
             if (option == null)
-                throw new ArgumentNullException("option must not be null");
+                throw new ArgumentNullException("option");
 
-            ensureOpenConnection();
+            EnsureOpenConnection();
             return connection.GetOptionValue(option.Value);
         }
 
         public void SetOption(EDPOption option, string value) {
             if (option == null)
-                throw new ArgumentNullException("option must not be null");
+                throw new ArgumentNullException("option");
 
-            ensureOpenConnection();
+            EnsureOpenConnection();
             connection.SetOption(option.Value, value);
+        }
+
+        public Query CreateQuery(Selection selection) {
+            if (selection == null)
+                throw new ArgumentNullException("selection");
+
+            return new Query(connection, selection);
         }
 
 

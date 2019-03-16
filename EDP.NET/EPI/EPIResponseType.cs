@@ -53,7 +53,7 @@ namespace EDPDotNet.EPI {
                     return EPIResponseType.End;
 
                 case CommandWords.Responses.MetaData:
-                    return EPIResponseType.MetaData;
+                    return EPIResponseType.Undefined;
 
                 case CommandWords.Responses.ProgressMessage:
                     return EPIResponseType.Undefined;

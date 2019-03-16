@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace EDPDotNet.EPI {
-    public static class Utiltities {
+    public static class Utilities {
         public static bool ToBool(string value) {
             if (String.IsNullOrEmpty(value))
                 return false;
