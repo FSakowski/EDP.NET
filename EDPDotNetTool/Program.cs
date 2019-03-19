@@ -26,20 +26,24 @@ namespace EDPDotNet.Tool {
                 sel.Direction = OrderDirection.Descending;
                 sel.FilingMode = FilingMode.Active;
                 sel.LinkMode = ConditionLinkMode.Or;
+                sel.Paging = true;
+                sel.PageSize = 1;
 
                 Query query = ctx.CreateQuery(sel);
-                /*query.FieldList.Add("idno");
+                query.FieldList.Add("idno");
                 query.FieldList.Add("descrOperLang");
                 query.FieldList.Add("swd");
-                query.FieldList.Add("zipCode");*/
+                query.FieldList.Add("zipCode");
+                query.FieldList.Add("town");
 
-                DataSet data = query.Execute();
+                do {
+                    DataSet data = query.Execute();
 
-                foreach(Record r in data) {
-                    foreach(KeyValuePair<Field, string> item in r) {
-                        Console.WriteLine(item.Key + " (" + item.Key.Description + ", " + item.Key.Type + ") = " + item.Value);
+                    foreach (Record r in data) {
+                        Console.WriteLine(r["idno"] + " " + r["descrOperLang"] + " " + r["zipCode"] + " " + r["town"]);
                     }
-                }
+
+                } while (!query.EndOfData);
             }
 
             Console.WriteLine("\n Press Enter to continue...");

@@ -11,6 +11,12 @@ namespace EDPDotNet {
 
         public string this[string name] {
             get {
+                if (name == null)
+                    throw new ArgumentNullException("name");
+
+                if (!lookupDictionary.ContainsKey(name))
+                    throw new UnknownFieldException(name);
+
                 return this[lookupDictionary[name]];
             }
         }

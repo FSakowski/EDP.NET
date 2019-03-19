@@ -117,7 +117,7 @@ namespace EDPDotNet.EPI {
             };
 
             // Server sendet als erstes eine Status-Message, welche abgeholt werden kann, wird sie nicht 
-            // abgeholt, wird sie mit beim nächsten Befehl empfangen
+            // abgeholt, wird sie mit dem nächsten Befehl empfangen
             EPICommand status = stream.ReadNextCommand();
 
             stream.Write(CreateChangeMandantCommand());

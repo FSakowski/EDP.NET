@@ -105,6 +105,10 @@ namespace EDPDotNet {
 
         #endregion
 
+        public void Add(string fieldName) {
+            Add(new Field(fieldName));
+        }
+
         public override string ToString() {
             StringBuilder sb = new StringBuilder();
 
