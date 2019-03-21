@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace EDPDotNet.EPI {
     public class EPIConnection : IDisposable {
@@ -16,6 +17,8 @@ namespace EDPDotNet.EPI {
         private string mandant;
         private ushort port;
         private string password;
+
+        private uint actionIdCounter;
 
         private TcpClient client;
         EPIStream stream;
@@ -102,7 +105,7 @@ namespace EDPDotNet.EPI {
             if (connected)
                 Close();
 
-            ActionId = 1;
+            ResetActionId();
 
             try {
                 client = new TcpClient(host, port);
@@ -131,6 +134,16 @@ namespace EDPDotNet.EPI {
             connected = true;
         }
 
+        private void ResetActionId() {
+            ActionId = 1;
+            actionIdCounter = ActionId;
+
+            if (connected) {
+                stream.RemoveAllChannels();
+                stream.AddChannel(ActionId);
+            }
+        }
+
         /// <summary>
         /// Sendet ein END-Kommando und schließt die Verbindung.
         /// </summary>
@@ -148,6 +161,11 @@ namespace EDPDotNet.EPI {
 
             if (client != null)
                 client.Close();
+        }
+
+        public uint RegisterNewActionId() {
+            uint nextActionId = ++actionIdCounter;
+            return nextActionId;
         }
 
         public void SetOption(string name, string value) {
@@ -190,7 +208,7 @@ namespace EDPDotNet.EPI {
                 new Field("value")
             };
 
-            DataSet ds = DataSet.Fill(stream, fieldList);
+            DataSet ds = DataSet.Fill(stream[ActionId], fieldList);
 
             if (ds.Count == 0)
                 throw new EPIException("server response contains no data about the requested option value");
@@ -198,13 +216,13 @@ namespace EDPDotNet.EPI {
             return ds[0]["value"];
         }
 
-        public DataSet ExecuteQuery(string select, FieldList fieldList, int limit, int offset, string varLang) {
+        public DataSet ExecuteQuery(string select, uint actionId, FieldList fieldList, int limit, int offset, string varLang) {
             if (fieldList == null)
                 throw new ArgumentNullException("fieldList");
 
             EPICommand exq = new CommandBuilder()
                .SetCMDWord(CommandWords.Selecting.ExecuteQuery)
-               .SetActionId(ActionId)
+               .SetActionId(actionId)
                .AddField(select)
                .AddField(fieldList.ToString())
                .AddField(limit == 0 ? String.Empty : limit.ToString())
@@ -223,16 +241,16 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("query execution failed", stream.ResultMessage);
 
-            return DataSet.Fill(stream, fieldList);
+            return DataSet.Fill(stream[actionId], fieldList);
         }
 
-        public DataSet GetNextRecord(FieldList fieldList) {
+        public DataSet GetNextRecord(FieldList fieldList, uint actionId) {
             if (fieldList == null)
                 throw new ArgumentNullException("fieldList");
 
             EPICommand gnr = new CommandBuilder()
                 .SetCMDWord(CommandWords.Selecting.GetNextRecord)
-                .SetActionId(ActionId)
+                .SetActionId(actionId)
                 .Build();
 
             stream.Write(gnr);
@@ -240,7 +258,19 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("get next record failed", stream.ResultMessage);
 
-            return DataSet.Fill(stream, fieldList);
+            return DataSet.Fill(stream[actionId], fieldList);
+        }
+
+        public void BreakQueryExecution(uint actionId) {
+            EPICommand brq = new CommandBuilder()
+                .SetCMDWord(CommandWords.Selecting.BreakQueryExecution)
+                .SetActionId(actionId)
+                .Build();
+
+            stream.Write(brq);
+
+            if (stream.Read() != EPIResponseType.Data)
+                throw new EPIException("break query execution failed", stream.ResultMessage);
         }
 
         private EPICommand CreateChangeMandantCommand() {

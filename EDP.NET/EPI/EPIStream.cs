@@ -8,7 +8,7 @@ namespace EDPDotNet.EPI {
     /// <summary>
     /// Liest und schreibt EPI-Kommandos über einen Netzwerkstream. Empfangene Nachrichten werden in eine Warteschlange eingereiht.
     /// </summary>
-    public class EPIStream : Queue<EPICommand>, IDisposable {
+    public class EPIStream : IDisposable {
         private Encoding encoding = System.Text.Encoding.ASCII;
         private Char fldSep = '|';
         private ushort maxBufferSize = 4096;
@@ -19,6 +19,8 @@ namespace EDPDotNet.EPI {
         private TextWriter statusMessageWriter; 
 
         private EPICommand resultMessage;
+
+        private Dictionary<uint, Channel> channels;
 
         #region Properties
         public Encoding Encoding {
@@ -67,6 +69,15 @@ namespace EDPDotNet.EPI {
             }
         }
 
+        public Queue<EPICommand> this[uint actionId] {
+            get {
+                if (!channels.ContainsKey(actionId))
+                    throw new IndexOutOfRangeException($"for the action id {actionId} is no channel registered");
+
+                return channels[actionId];
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -76,6 +87,7 @@ namespace EDPDotNet.EPI {
         public EPIStream(NetworkStream stream) {
             this.stream = stream ?? throw new ArgumentNullException("stream");
             resultMessage = CommandBuilder.CreateEmptyCommand();
+            channels = new Dictionary<uint, Channel>();
         }
 
         #region Decode / Encode
@@ -147,7 +159,10 @@ namespace EDPDotNet.EPI {
         /// </summary>
         /// <param name="cmd">EPI-Kommando</param>
         public void Write(EPICommand cmd) {
-            Clear();
+            if (!channels.ContainsKey(cmd.ActionId))
+                AddChannel(cmd.ActionId);
+
+            channels[cmd.ActionId].Clear();
             string request = DecodeCommand(cmd);
 
 #if DEBUG
@@ -175,6 +190,25 @@ namespace EDPDotNet.EPI {
 
             int index = response.IndexOf(endCommandSign, 0);
             return ReadResponse(response, 0, index == -1 ? response.Length : index + 1);
+        }
+
+        public void AddChannel(uint actionId) {
+            if (channels.ContainsKey(actionId))
+                return;
+
+            channels.Add(actionId, new Channel(actionId));
+        }
+
+        public void RemoveChannel(uint actionId) {
+            if (!channels.ContainsKey(actionId))
+                return;
+
+            channels[actionId].Clear();
+            channels.Remove(actionId);
+        }
+
+        public void RemoveAllChannels() {
+            channels.Clear();
         }
 
         /// <summary>
@@ -302,6 +336,13 @@ namespace EDPDotNet.EPI {
                 case CommandWords.Responses.Error:
                     throw new EPIException("server responses an error: " + cmd[CommandFields.Responses.E.MessageText], cmd);
             }
+        }
+
+        private void Enqueue(EPICommand cmd) {
+            if (!channels.ContainsKey(cmd.ActionId))
+                throw new EPIException($"The response contains an unknown action id (${cmd.ActionId}) and can't assigned to a channel", cmd);
+
+            channels[cmd.ActionId].Enqueue(cmd);
         }
 
         /// <summary>

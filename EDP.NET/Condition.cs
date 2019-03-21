@@ -5,52 +5,86 @@ using System.Text;
 namespace EDPDotNet {
     public class Condition {
 
+        public abstract class Operator {
+            public string Format {
+                get;
+                private set;
+            }
+
+            internal Operator(string format) {
+                this.Format = format;
+            }
+
+            public abstract string ToString(string field, params string[] values);
+        }
+
+        internal class UnaryOperator : Operator {
+           public UnaryOperator(string format) : base(format) {
+            }
+
+            public override string ToString(string field, params string[] values) {
+                return String.Format(Format, field);
+            }
+        }
+
+        internal class BinaryOperator : Operator {
+            public BinaryOperator(string format) : base(format) {
+            }
+
+            public override string ToString(string field, params string[] values) {
+                return String.Format(Format, field, values[0]);
+            }
+        }
+
+        internal class TernaryOperator : Operator {
+            public TernaryOperator(string format) : base(format) {
+            }
+
+            public override string ToString(string field, params string[] values) {
+                return String.Format(Format, field, values[0], values[1]);
+            }
+        }
+
         public static class Operators {
-            public const string Eq = "{0}=={1}";
-            public const string EqIgnoreCase = "{0}~{1}";
-            public const string Neq = "{0}<>{1}";
-            public const string NeqIgnoreCase = "{0}~<>{1}";
-            public const string Between = "{0}={1}!{2}";
-            public const string Empty = "{0}==`";
-            public const string NotEmpty = "{0}<>`";
-            public const string Contains = "{0}/{1}";
-            public const string ContainsIgnoreCase = "{0}~/{1}";
-            public const string ContainsWord = "{0}//{1}";
-            public const string ContainsWordIgnoreCase = "~//";
-            public const string Gt = "{0}={1}!!";
-            public const string Geqt = "{0}={1}!";
-            public const string Lt = "{0}=!!{1}";
-            public const string Leqt = "{0}=!{1}";
-            public const string Matchcode = "{0}=`{1}";
-            public const string MatchcodeIgnoreCase = "{0}~`{1}";
-            public const string NotMatchcode = "{0}<>`{1}";
-            public const string NotMatchcodeIgnoreCase = "{0}~<>`{1}";
-            public const string Expression = "{0}/=={1}";
-            public const string ExpressionIgnoreCase = "{0}~/=={1}";
-            public const string NotExpression = "{0}/<>{1}";
-            public const string NotExpressionIgnoreCase = "{0}~/<>{1}";
+            public readonly static Operator Eq = new BinaryOperator("{0}=={1}");
+            public readonly static Operator EqIgnoreCase = new BinaryOperator("{0}~{1}");
+            public readonly static Operator Neq = new BinaryOperator("{0}<>{1}");
+            public readonly static Operator NeqIgnoreCase = new BinaryOperator("{0}~<>{1}");
+            public readonly static Operator Between = new TernaryOperator("{0}={1}!{2}");
+            public readonly static Operator Empty = new UnaryOperator("{0}==`");
+            public readonly static Operator NotEmpty = new UnaryOperator("{0}<>`");
+            public readonly static Operator Contains = new BinaryOperator("{0}/{1}");
+            public readonly static Operator ContainsIgnoreCase = new BinaryOperator("{0}~/{1}");
+            public readonly static Operator ContainsWord = new BinaryOperator("{0}//{1}");
+            public readonly static Operator ContainsWordIgnoreCase = new BinaryOperator("{0}~//{1}");
+            public readonly static Operator Gt = new BinaryOperator("{0}={1}!!");
+            public readonly static Operator Geqt = new BinaryOperator("{0}={1}!");
+            public readonly static Operator Lt = new BinaryOperator("{0}=!!{1}");
+            public readonly static Operator Leqt = new BinaryOperator("{0}=!{1}");
+            public readonly static Operator Matchcode = new BinaryOperator("{0}=`{1}");
+            public readonly static Operator MatchcodeIgnoreCase = new BinaryOperator("{0}~`{1}");
+            public readonly static Operator NotMatchcode = new BinaryOperator("{0}<>`{1}");
+            public readonly static Operator NotMatchcodeIgnoreCase = new BinaryOperator("{0}~<>`{1}");
+            public readonly static Operator Expression = new BinaryOperator("{0}/=={1}");
+            public readonly static Operator ExpressionIgnoreCase = new BinaryOperator("{0}~/=={1}");
+            public readonly static Operator NotExpression = new BinaryOperator("{0}/<>{1}");
+            public readonly static Operator NotExpressionIgnoreCase = new BinaryOperator("{0}~/<>{1}");
         }
 
         private string field;
-        private string operatorFormat;
+        private Operator op;
         private string value1;
         private string value2;
 
-        private Condition(string field, string op, string value1 = null, string value2 = null) {
+        private Condition(string field, Operator op, string value1 = null, string value2 = null) {
             this.field = field;
-            this.operatorFormat = op;
+            this.op = op;
             this.value1 = value1;
             this.value2 = value2;
         }
 
         public override string ToString() {
-            if (String.IsNullOrEmpty(value1))
-                return String.Format(operatorFormat, field);
-
-            if (String.IsNullOrEmpty(value2))
-                return String.Format(operatorFormat, field, value1);
-
-            return String.Format(operatorFormat, field, value1, value2);
+            return op.ToString(field, value1, value2);
         }
 
         /// <summary>

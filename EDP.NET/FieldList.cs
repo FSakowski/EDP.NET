@@ -105,8 +105,9 @@ namespace EDPDotNet {
 
         #endregion
 
-        public void Add(string fieldName) {
+        public FieldList Add(string fieldName) {
             Add(new Field(fieldName));
+            return this;
         }
 
         public override string ToString() {

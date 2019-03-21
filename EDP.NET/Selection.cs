@@ -94,7 +94,7 @@ namespace EDPDotNet {
             VariableLanguage = Language.English;
         }
 
-        public void AddConditions(Condition c) {
+        public void AddCondition(Condition c) {
             if (c == null)
                 throw new ArgumentNullException("c");
 
@@ -120,13 +120,13 @@ namespace EDPDotNet {
             };
 
             foreach (Condition c in conditions)
-                res.AddConditions(c);
+                res.AddCondition(c);
 
             if (s == null)
                 return res;
 
             foreach (Condition c in s.conditions)
-                res.AddConditions(c);
+                res.AddCondition(c);
 
             return res;
         }
@@ -153,7 +153,7 @@ namespace EDPDotNet {
             foreach (Condition c in conditions)
                 sb.Append(c).Append(";");
 
-            sb.AppendFormat("@link={0};", LinkModeToString(LinkMode));
+            sb.AppendFormat("@link={0};", ConditionLinkModeHelper.ToString(LinkMode));
 
             if (!String.IsNullOrEmpty(Key))
                 sb.AppendFormat("@sort={0};", Key);
@@ -162,17 +162,17 @@ namespace EDPDotNet {
                 sb.AppendFormat("@order={0}", OrderField);
 
                 if (Direction != OrderDirection.Undefined)
-                    sb.Append(".").Append(DirectionToString(Direction, true));
+                    sb.Append(".").Append(OrderDirectionHelper.ToString(Direction, true));
 
                 sb.Append(";");
             }
 
             if (Direction !=  OrderDirection.Undefined && String.IsNullOrEmpty(OrderField)) {
-                sb.AppendFormat("@direction={0};", DirectionToString(Direction, false));
+                sb.AppendFormat("@direction={0};", OrderDirectionHelper.ToString(Direction, false));
             }
 
             sb.AppendFormat("@rows={0};", IncludeRows ? "(Yes)" : "(No)");
-            sb.AppendFormat("@filingmode={0};", FilingModeToString(FilingMode));
+            sb.AppendFormat("@filingmode={0};", FilingModeHelper.ToString(FilingMode));
 
             if (Limit > 0)
                 sb.AppendFormat("@maxhit={0};", Limit);
@@ -180,39 +180,6 @@ namespace EDPDotNet {
             sb.AppendFormat("@lang={0}", LanguageHelper.ToString(VariableLanguage));
 
             return sb.ToString();
-        }
-
-        private string LinkModeToString(ConditionLinkMode linkMode) {
-            switch(linkMode) {
-                case ConditionLinkMode.And: return "(And)";
-                case ConditionLinkMode.Or: return "(Or)";
-                default:
-                    throw new NotSupportedException("link mode " + linkMode + " not supported");
-            }
-        }
-
-        private string DirectionToString(OrderDirection dir, bool order) {
-            switch(dir) {
-                case OrderDirection.Ascending: return "forwards";
-                case OrderDirection.Descending: return "backwards";
-                default:
-                    throw new NotSupportedException("order direction " + dir + " not supported");
-            }
-        }
-
-        private string FilingModeToString(FilingMode mode) {
-            switch (FilingMode) {
-                case FilingMode.Both:
-                    return "(Both)";
-                case FilingMode.Filed:
-                    return "(Filed)";
-                case FilingMode.Versionied:
-                    return "(Versionied)";
-                case FilingMode.Active:
-                    return "(Active)";
-                default:
-                    throw new NotSupportedException("filingmode " + mode + " not supported");
-            }
         }
     }
 }
