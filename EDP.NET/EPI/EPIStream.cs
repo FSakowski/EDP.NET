@@ -146,7 +146,8 @@ namespace EDPDotNet.EPI {
 
             // Sonstige Felder einlesen
             if (fields.Length > 2) {
-                for(int i = 2; i < fields.Length; i++)
+                // das letzte Feld nicht, da das Feldtrennzeichen am letzten Feld ebenfalls steht
+                for(int i = 2; i < fields.Length - 1; i++)
                     cmdBuilder.AddField(fields[i]);
             }
 
@@ -272,8 +273,6 @@ namespace EDPDotNet.EPI {
         }
 
         private EPICommand ReadResponse(string response, int offset, int endIndex) {
-
-
             string trimedResponse = response.Substring(offset, endIndex - offset);
 
             // Newline am Ende entfernen, dieses wird hier nicht mehr benötigt

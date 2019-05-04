@@ -105,9 +105,27 @@ namespace EDPDotNet {
 
         #endregion
 
+        public bool Contains(string fieldname) {
+            return Contains(new Field(fieldname));
+        }
+
         public FieldList Add(string fieldName) {
             Add(new Field(fieldName));
             return this;
+        }
+
+        /// <summary>
+        /// Fügt dieser Feldliste die Felder der angegebenen Feldliste hinzu.
+        /// Doppelte Felder werden nicht hinzugefügt.
+        /// </summary>
+        /// <param name="fieldList"></param>
+        public void Merge(FieldList fieldList) {
+            if (fieldList == null)
+                return;
+
+            foreach(Field f in fieldList)
+                if (!Contains(f))
+                    Add(f);
         }
 
         public override string ToString() {

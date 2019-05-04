@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -203,20 +204,34 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("edp option could'nt be received", stream.ResultMessage);
 
-            FieldList fieldList = new FieldList {
-                new Field("name"),
-                new Field("value")
-            };
+            bool valueReaded = false;
+            string value = String.Empty;
 
-            DataSet ds = DataSet.Fill(stream[ActionId], fieldList);
+            while(stream[ActionId].Count > 0) {
+                EPICommand cmd = stream[ActionId].Dequeue();
+                if (CommandWords.Responses.Data == cmd.CMDWord) {
+                    if (valueReaded)
+                        throw new EPIException("server responses with an unexpected data command", cmd);
 
-            if (ds.Count == 0)
-                throw new EPIException("server response contains no data about the requested option value");
+                    if (cmd.Fields.Length < 1)
+                        throw new EPIException("server responses with an empty data command", cmd);
 
-            return ds[0]["value"];
+                    value = cmd[1];
+                    valueReaded = true;
+                }
+
+                if (CommandWords.Responses.EndOfData == cmd.CMDWord) {
+                    if (!valueReaded)
+                        throw new EPIException("server response contains no data about the requested option value");
+                    
+                    return value;
+                }
+            }
+
+            throw new EPIException("server response contains no data about the requested option value");
         }
 
-        public DataSet ExecuteQuery(string select, uint actionId, FieldList fieldList, int limit, int offset, string varLang) {
+        public Queue<EPICommand> ExecuteQuery(string select, uint actionId, string fieldList, int limit, int offset, string varLang) {
             if (fieldList == null)
                 throw new ArgumentNullException("fieldList");
 
@@ -224,7 +239,7 @@ namespace EDPDotNet.EPI {
                .SetCMDWord(CommandWords.Selecting.ExecuteQuery)
                .SetActionId(actionId)
                .AddField(select)
-               .AddField(fieldList.ToString())
+               .AddField(fieldList)
                .AddField(limit == 0 ? String.Empty : limit.ToString())
                .AddField(offset == 0 ? String.Empty : offset.ToString())
                .AddField(String.Empty) // Edit-TID
@@ -232,7 +247,8 @@ namespace EDPDotNet.EPI {
                .AddField(String.Empty) // Edit FieldName
                .AddField(String.Empty) // Timeout
                // Metadaten nur dann aktivieren, wenn keine Feldliste vorhanden ist
-               .AddField(fieldList.Count == 0 ? "1" : "0")
+               .AddField("1")
+               // .AddField(String.IsNullOrEmpty(fieldList) ? "1" : "0")
                .AddField(varLang)
                .Build();
 
@@ -241,13 +257,10 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("query execution failed", stream.ResultMessage);
 
-            return DataSet.Fill(stream[actionId], fieldList);
+            return stream[actionId];
         }
 
-        public DataSet GetNextRecord(FieldList fieldList, uint actionId) {
-            if (fieldList == null)
-                throw new ArgumentNullException("fieldList");
-
+        public Queue<EPICommand> GetNextRecord(uint actionId) {
             EPICommand gnr = new CommandBuilder()
                 .SetCMDWord(CommandWords.Selecting.GetNextRecord)
                 .SetActionId(actionId)
@@ -258,7 +271,7 @@ namespace EDPDotNet.EPI {
             if (stream.Read() != EPIResponseType.Data)
                 throw new EPIException("get next record failed", stream.ResultMessage);
 
-            return DataSet.Fill(stream[actionId], fieldList);
+            return stream[actionId];
         }
 
         public void BreakQueryExecution(uint actionId) {

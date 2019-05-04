@@ -1,4 +1,5 @@
 ﻿using EDPDotNet.EPI;
+using EDPDotNet.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -55,6 +56,60 @@ namespace EDPDotNet {
         public void Dispose() {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Erzeugt eine Abfrage, welche über Linq angesteuert werden kann.
+        /// </summary>
+        /// <param name="db">Datenbanknummer</param>
+        /// <param name="groups">Gruppennummern</param>
+        /// <param name="fields">Feldnamen</param>
+        /// <returns></returns>
+        public QueryProxy<Record> Get(int db, int[] groups, params string[] fields) {
+            FieldList list = new FieldList();
+
+            foreach(string f in fields)
+                list.Add(f);
+
+            return Get(db, groups, list);
+        }
+
+        /// <summary>
+        /// Erzeugt eine Abfrage, welche über Linq angesteuert werden kann.
+        /// </summary>
+        /// <param name="db">Datenbanknummer</param>
+        /// <param name="group">Gruppennummer</param>
+        /// <param name="fieldList">Feldliste</param>
+        /// <returns></returns>
+        public QueryProxy<Record> Get(int db, int group, FieldList fieldList) {
+            return Get(db, new int[] { group }, fieldList);
+        }
+
+        /// <summary>
+        /// Erzeugt eine Abfrage, welche über Linq angesteuert werden kann.
+        /// </summary>
+        /// <param name="db">Datenbanknummern</param>
+        /// <param name="groups">Gruppennummern</param>
+        /// <returns></returns>
+        public QueryProxy<Record> Get(int db, params int[] groups) {
+            return Get(db, groups, new FieldList());
+        }
+
+        /// <summary>
+        /// Erzeugt eine Abfrage, welche über Linq angesteuert werden kann.
+        /// </summary>
+        /// <param name="db">Datenbanknummer</param>
+        /// <param name="groups">Gruppennummern</param>
+        /// <param name="fieldList">Feldliste</param>
+        /// <returns></returns>
+        public QueryProxy<Record> Get(int db, int[] groups, FieldList fieldList) {
+            if (fieldList == null)
+                fieldList = new FieldList();
+
+            fieldList.Add("id");
+            fieldList.Add("idno");
+
+            return new QueryProxy<Record>(new QueryProvider(this, db, groups, fieldList));
         }
 
         ~Context() {

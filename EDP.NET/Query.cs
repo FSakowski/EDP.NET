@@ -1,18 +1,23 @@
 ﻿using EDPDotNet.EPI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace EDPDotNet {
+    /// <summary>
+    /// Führt eine Datenbankabfrage anhand von Selektionskriteren und Optionen aus und
+    /// liefert die Ergebnisse als <see cref="DataSet"/> zurück.
+    /// </summary>
     public class Query {
 
         private EPIConnection connection;
 
         private Selection selection;
 
-        private DataSet lastDataSet;
-
-        private FieldList fieldList;
+        private DataSet lastDataSet;  
 
         #region properties
 
@@ -36,12 +41,6 @@ namespace EDPDotNet {
             }
         }
 
-        public FieldList FieldList {
-            get {
-                return fieldList;
-            }
-        }
-
         public uint ActionId {
             get;
             private set;
@@ -53,7 +52,6 @@ namespace EDPDotNet {
             this.connection = connection ?? throw new ArgumentNullException("connection");
             this.selection = selection ?? throw new ArgumentNullException("selection");
             VariableLanguage = Language.English;
-            fieldList = new FieldList();
             ActionId = connection.RegisterNewActionId();
         }
 
@@ -62,6 +60,9 @@ namespace EDPDotNet {
                 connection.Open();
         }
 
+        /// <summary>
+        /// Bricht eine bereits gestartete Abfrage ab und setzt diese zurück.
+        /// </summary>
         public void Reset() {
             BreakExecution();
             lastDataSet = null;
@@ -88,6 +89,13 @@ namespace EDPDotNet {
             return lastDataSet;
         }
 
+        /// <summary>
+        /// Führt die Abfrage aus und liefert den ersten Datensatz zurück oder NULL, wenn
+        /// die Ergebnismenge leer ist. Enthält die Eregbnismenge weitere Datensätze, 
+        /// wird die Abfrage automatisch abgebrochen. Die Selektionskriteren sollten möglichst nur
+        /// zu einen Datensazu passen oder auf ein Element limitiert werden. 
+        /// </summary>
+        /// <returns></returns>
         public Record GetFirstRecord() {
             DataSet data = Execute();
             if (data.Count == 0)
@@ -100,7 +108,7 @@ namespace EDPDotNet {
         }
 
         private void BreakExecution() {
-            if (lastDataSet == null)
+            if (lastDataSet == null || EndOfData)
                 return;
 
             connection.BreakQueryExecution(ActionId);
@@ -110,11 +118,13 @@ namespace EDPDotNet {
             int pageSize = selection.Paging ? selection.PageSize : 0;
             int offset = selection.Offset;
 
-            return connection.ExecuteQuery(selection.ToString(), ActionId, FieldList, pageSize, offset, LanguageHelper.ToString(VariableLanguage));
+            var cmds = connection.ExecuteQuery(selection.ToString(), ActionId, selection.FieldList.ToString(), pageSize, offset, LanguageHelper.ToString(VariableLanguage));
+            return DataSet.Fill(cmds, selection.FieldList);
         }
 
         private DataSet ContinueQuery() {
-            return connection.GetNextRecord(FieldList, ActionId);
+            var cmds = connection.GetNextRecord(ActionId);
+            return DataSet.Fill(cmds, selection.FieldList);
         }
     }
 }

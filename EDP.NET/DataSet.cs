@@ -1,6 +1,8 @@
 ﻿using EDPDotNet.EPI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace EDPDotNet {
@@ -8,6 +10,12 @@ namespace EDPDotNet {
 
         private FieldList fieldList;
 
+        #region Properties
+
+        /// <summary>
+        /// Zugehörige Transaktions-Id für die Kommunikation mit dem EPI-Dienst. Dient
+        /// zur Unterscheidung zwischen mehreren Abfragen.
+        /// </summary>
         public uint ActionId {
             get;
             private set;
@@ -50,7 +58,9 @@ namespace EDPDotNet {
                 fieldList = value;
             }
         }
-        
+
+        #endregion
+
         /// <summary>
         /// Liest aus eine Warteschlange von EPI-Kommandos nacheinander die Daten im Form von
         /// Key-Value-Paaren ein. Fragmentierte Datensätze werden berücksichtigt. Alle Nachrichten bis zum
@@ -126,12 +136,14 @@ namespace EDPDotNet {
 
             for (int i = 1; i < data.Fields.Length; i++) {
                 string value = data[i];
+                // die erste Angabe in den Metadaten ist der Typ und wird hier übersprungen, die Feldliste beginnt aber bei 0
+                int fieldIdx = i - 1;
 
-                if (type == MetaDataType.Name && i >= fieldList.Count) {
-                    // Feld noch nicht in der Feldliste vorhanden
+                if (type == MetaDataType.Name && !fieldList.Contains(value)) {
                     fieldList.Add(new Field(value));
-                } else if (i < fieldList.Count) {
-                    Field f = fieldList[i];
+                } else if (fieldIdx < fieldList.Count) {
+                    // Die Metadaten kommen ohne Bezug zu den Feldnamen aber immer in der gleichen Reihenfolge
+                    Field f = fieldList[fieldIdx];
                     f.SetMetaData(type, value);
                 }
             }

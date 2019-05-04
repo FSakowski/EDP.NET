@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EDP.NET", "EDP.NET\EDP.NET.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EDP.NET Tool", "EDPDotNetTool\EDP.NET Tool.csproj", "{51FC87D4-55ED-4008-B00E-542B5B46351A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EDP.NET Test", "EDP.NET Test\EDP.NET Test.csproj", "{EAC6B84D-F1C4-48B5-9DC3-E44CFDD06979}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{51FC87D4-55ED-4008-B00E-542B5B46351A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51FC87D4-55ED-4008-B00E-542B5B46351A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51FC87D4-55ED-4008-B00E-542B5B46351A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAC6B84D-F1C4-48B5-9DC3-E44CFDD06979}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAC6B84D-F1C4-48B5-9DC3-E44CFDD06979}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAC6B84D-F1C4-48B5-9DC3-E44CFDD06979}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAC6B84D-F1C4-48B5-9DC3-E44CFDD06979}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

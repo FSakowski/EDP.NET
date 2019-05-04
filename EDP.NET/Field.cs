@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace EDPDotNet {
+    /// <summary>
+    /// Repräsentiert ein Feld in Datensätzen und beinhaltet Metainformationen
+    /// zu diesem Feld.
+    /// </summary>
     public class Field {
         private string name;
 
@@ -101,6 +105,10 @@ namespace EDPDotNet {
             switch (type) {
                 case MetaDataType.Name:
                     name = value;
+                    break;
+
+                case MetaDataType.OutName:
+                    outName = value;
                     break;
 
                 case MetaDataType.OriginalName:

@@ -4,10 +4,14 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace EDPDotNet {
+    /// <summary>
+    /// Datensatz aus einer EDP-Abfrage.
+    /// </summary>
     public class Record : IDictionary<Field, string> {
-
         private Dictionary<Field, string> dataDictionary;
         private Dictionary<string, Field> lookupDictionary;
+
+        #region Properties
 
         public string this[string name] {
             get {
@@ -20,6 +24,8 @@ namespace EDPDotNet {
                 return this[lookupDictionary[name]];
             }
         }
+
+        #endregion
 
         public Record() {
             dataDictionary = new Dictionary<Field, string>();
@@ -41,6 +47,9 @@ namespace EDPDotNet {
         public void Add(Field field, string value) {
             if (field == null)
                 throw new ArgumentNullException("field");
+
+            if (dataDictionary.ContainsKey(field))
+                return;
 
             dataDictionary.Add(field, value);
             lookupDictionary.Add(field.Name, field);
@@ -109,6 +118,8 @@ namespace EDPDotNet {
 
         #endregion
 
+        #region Ergänzungen zur IDictionary-Implementierung für Strings als Feldnamen
+
         public ICollection<string> NameKeys => lookupDictionary.Keys;
 
         public bool ContainsField(string name) {
@@ -124,6 +135,27 @@ namespace EDPDotNet {
 
         public void Add(string name, string value) {
             Add(new Field(name), value);
+        }
+
+        #endregion
+
+        public override string ToString() {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{");
+            bool first = true;
+
+            foreach(KeyValuePair<Field, string> field in dataDictionary) {
+                if (first)
+                    first = false;
+                else
+                    sb.Append(", ");
+
+                sb.Append(string.Format("{0}:{1}", field.Key.Name, field.Value));
+            }
+
+            sb.Append("}");
+
+            return sb.ToString();
         }
     }
 }
