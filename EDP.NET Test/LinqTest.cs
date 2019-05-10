@@ -46,13 +46,38 @@ namespace EDP.NET_Test
         }
 
         [TestMethod]
-        public void QueryContacts() {
+        public void QueryAndCountContacts() {
             var contacts = from c in ctx.Get(0, new int[] { 2 }, "id", "idno", "swd", "descrOperLang")
                            where "70032" == c["companyARAP"]
                            select c;
 
-            Assert.AreEqual(3, contacts.ToList().Count());
+            Assert.AreEqual(3, contacts.Count());
             Assert.AreEqual("ML Hannover - Volksauto AG, 38440 Wolfsburg", contacts.First()["descrOperLang"]);
+        }
+
+        [TestMethod]
+        public void QueryCustomerWithLocaleVariable() {
+            string swd = "VAAG";
+
+            var customers = from c in ctx.Get(0, 1, 2)
+                            where c["swd"] == swd
+                            select c;
+
+            Record customer = customers.FirstOrDefault();
+
+            Assert.AreNotEqual(null, customer);
+            Assert.AreEqual("VAAG", customer["swd"]);
+        }
+
+        [TestMethod]
+        public void QueryAndSelect() {
+            var contacts = from c in ctx.Get(0, 2)
+                           where "70032" == c["companyARAP"]
+                           select new { ID = c["id"], IdNo = c["idno"], Swd = c["swd"], Descr = c["descrOperLang"], ZipCode = c.Field<Int32>("zipCode") };
+
+            Assert.AreEqual(3, contacts.ToList().Count());
+            Assert.AreEqual("ML Hannover - Volksauto AG, 38440 Wolfsburg", contacts.ToList().First().Descr);
+            Assert.AreEqual(38440, contacts.ToList().First().ZipCode);
         }
 
         [TestCleanup]

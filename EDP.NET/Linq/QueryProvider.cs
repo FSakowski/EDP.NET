@@ -44,12 +44,16 @@ namespace EDPDotNet.Linq {
             return (T)this.Execute(expression);
         }
 
-        public Selection TranslateSelection(Expression expression) {
+        private TranslateResult Translate(Expression expression) {
+            expression = Evaluator.PartialEval(expression);
+
             return new QueryTranslator().Translate(db, groups, expression);
         }
 
         public object Execute(Expression expression) {
-            Selection sel = this.TranslateSelection(expression);
+            TranslateResult result = Translate(expression);
+
+            Selection sel = result.Selection;
             sel.FieldList.Merge(fieldList);
 
 #if DEBUG
@@ -58,15 +62,25 @@ namespace EDPDotNet.Linq {
 
             Query query = context.CreateQuery(sel);
 
-            Type elementType = expression.Type;
-            if (elementType == typeof(Record)) {
-                return query.GetFirstRecord();
+            Type elementType = TypeSystem.GetElementType(expression.Type);
+            if (result.Projector != null) {
+                Delegate projector = result.Projector.Compile();
+                return Activator.CreateInstance(
+                    typeof(ProjectionReader<>).MakeGenericType(elementType),
+                    BindingFlags.Instance | BindingFlags.NonPublic, null,
+                    new object[] { query, projector },
+                    null);
+
             } else {
-                elementType = TypeSystem.GetElementType(expression.Type);
-                if (elementType == typeof(Record))
-                    return new RecordReader(query);
-                else
-                    throw new NotSupportedException($"The expression type '{elementType}' is not supported");
+                if (elementType == typeof(Record)) {
+                    return query.GetFirstRecord();
+                } else {
+                    elementType = TypeSystem.GetElementType(expression.Type);
+                    if (elementType == typeof(Record))
+                        return new RecordReader(query);
+                    else
+                        throw new NotSupportedException($"The expression type '{elementType}' is not supported");
+                }
             }  
         }
     }

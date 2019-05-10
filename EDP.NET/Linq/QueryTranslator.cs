@@ -22,14 +22,23 @@ namespace EDPDotNet.Linq {
         private Selection selection;
         private bool negateCondition;
 
+        private RecordProjection projection;
+        private ParameterExpression row;
+
         internal QueryTranslator() {
 
         }
 
-        internal Selection Translate(int db, int[] groups, Expression expression) {
+        internal TranslateResult Translate(int db, int[] groups, Expression expression) {
+
             selection = new Selection(db, groups);
+            row = Expression.Parameter(typeof(ProjectionRow), "row");            
             this.Visit(expression);
-            return this.selection;
+
+            return new TranslateResult {
+                Selection = selection,
+                Projector = projection != null ? Expression.Lambda(projection.Selector, row) : null
+            };
         }
 
         private static Expression StripQuotes(Expression e) {
@@ -45,25 +54,33 @@ namespace EDPDotNet.Linq {
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node) {
-            if (node.Method.DeclaringType == typeof(Queryable) && node.Method.Name == "Where") {
-                Visit(node.Arguments[0]);
+            if (node.Method.DeclaringType == typeof(Queryable)) {
+                if (node.Method.Name == "Where") {
+                    Visit(node.Arguments[0]);
 
-                LambdaExpression lambda = (LambdaExpression)StripQuotes(node.Arguments[1]);
-                Visit(lambda.Body);
-                return node;
-            }
+                    LambdaExpression lambda = (LambdaExpression)StripQuotes(node.Arguments[1]);
+                    Visit(lambda.Body);
+                    return node;
+                }
 
-            if (node.Method.DeclaringType == typeof(Queryable) && node.Method.Name == "FirstOrDefault") {
-                selection.Limit = 1;
+                if (node.Method.Name == "FirstOrDefault") {
+                    selection.Limit = 1;
 
-                Visit(node.Arguments[0]);
+                    Visit(node.Arguments[0]);
 
-                return node;
-            }
+                    return node;
+                }
 
-            if (node.Method.DeclaringType == typeof(Queryable) && node.Method.Name == "Select") {
-                Visit(node.Arguments[0]);
-                return node;
+                if (node.Method.Name == "Select") {
+                    LambdaExpression lambda = (LambdaExpression)StripQuotes(node.Arguments[1]);
+                    RecordProjection projection = new RecordProjector().ProjectRecords(lambda.Body, row);
+
+                    selection.FieldList.Merge(projection.List);
+
+                    Visit(node.Arguments[0]);
+                    this.projection = projection;
+                    return node;
+                }
             }
 
             return base.VisitMethodCall(node);
