@@ -19,8 +19,6 @@ namespace EDPDotNet {
 
         private FieldList fields;
 
-        private int iterator = 0;
-
         public DataCommandReader() {
             data = new List<Record>();
             EndOfData = true;
@@ -56,11 +54,9 @@ namespace EDPDotNet {
 
         #endregion
 
-        public void Fill(Queue<EPICommand> cmds) {
-            ReadCommandQueue(cmds);
-        }
+        public List<Record> Read(Queue<EPICommand> cmds) {
+            Reset();
 
-        private void ReadCommandQueue(Queue<EPICommand> cmds) {
             while (cmds.Count > 0) {
                 currentCmd = cmds.Dequeue();
                 dataContinuation = false;
@@ -91,6 +87,8 @@ namespace EDPDotNet {
                         throw new NotSupportedException("command " + currentCmd.CMDWord + " is not supported");
                 }
             }
+
+            return data;
         }
 
         private void ReadBeginOfData() {
@@ -172,25 +170,11 @@ namespace EDPDotNet {
             EndOfData = Utilities.ToBool(currentCmd[CommandFields.Responses.EOD.EOFFlag]);
         }
 
-        public bool HasNext() {
-            return iterator < data.Count;
-        }
-
-        public Record ReadNextRecord() {
-            if (iterator >= data.Count)
-                throw new IndexOutOfRangeException("DataCommandReader has no more records");
-
-            return data[iterator++];
-        } 
-        public void Reset() {
-            iterator = 0;
+        private void Reset() {
             data.Clear();
             currentCmd = null;
             lastRecord = null;
             lastField = null;
-            EndOfData = false;
-            Success = false;
-            EstimatedRecordsCount = 0;
         }
     }
 }

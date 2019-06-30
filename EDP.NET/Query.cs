@@ -13,6 +13,8 @@ namespace EDPDotNet {
     /// </summary>
     public class Query : IEnumerable<Record>, IDisposable {
 
+        private List<Record> data;
+
         private EPIConnection connection;
         private Selection selection;
         private DataCommandReader reader;        
@@ -67,6 +69,7 @@ namespace EDPDotNet {
             this.selection = selection ?? throw new ArgumentNullException("selection");
             VariableLanguage = Language.English;
             ActionId = connection.RegisterNewActionId();
+            data = new List<Record>();
             reader = new DataCommandReader(selection.FieldList);
         }
 
@@ -80,11 +83,10 @@ namespace EDPDotNet {
                 executed = true;
                 int pageSize = selection.Paging ? selection.PageSize : 0;
                 int offset = selection.Offset;
-                reader.Reset();
-                reader.Fill(connection.ExecuteQuery(selection.ToString(), ActionId, selection.FieldList.ToString(), WithMetaData, pageSize, offset, LanguageHelper.ToString(VariableLanguage)));
+                data.AddRange(reader.Read(connection.ExecuteQuery(selection.ToString(), ActionId, selection.FieldList.ToString(), WithMetaData, pageSize, offset, LanguageHelper.ToString(VariableLanguage))));
             } else {
                 if (!reader.EndOfData)
-                    reader.Fill(connection.GetNextRecord(ActionId));
+                    data.AddRange(reader.Read(connection.GetNextRecord(ActionId)));
             }
         }
 
@@ -112,21 +114,20 @@ namespace EDPDotNet {
         public void BreakExecution() {
             if (executed && !reader.EndOfData) {
                 connection.BreakQueryExecution(ActionId);
+                data.Clear();
+                executed = false;
             }
-
-            reader.Reset();
-            executed = false;
         }
 
         public IEnumerator<Record> GetEnumerator() {
             EnsureConnection();
-            BreakExecution();
+            int iterator = 0;
 
             do {
                 Execute();
-
-                while (reader.HasNext()) {
-                    yield return reader.ReadNextRecord();
+   
+                while (iterator < data.Count) {
+                    yield return data[iterator++];
                 }
             } while (!reader.EndOfData);
         }
@@ -141,6 +142,7 @@ namespace EDPDotNet {
             if (!disposed) {
                 if (disposing) {
                     BreakExecution();
+                    data.Clear();
                 }
 
                 disposed = true;
