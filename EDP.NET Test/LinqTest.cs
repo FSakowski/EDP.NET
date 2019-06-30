@@ -71,13 +71,55 @@ namespace EDP.NET_Test
 
         [TestMethod]
         public void QueryAndSelect() {
-            var contacts = from c in ctx.Get(0, 2)
+            var contacts = (from c in ctx.Get(0, 2)
                            where "70032" == c["companyARAP"]
-                           select new { ID = c["id"], IdNo = c["idno"], Swd = c["swd"], Descr = c["descrOperLang"], ZipCode = c.Field<Int32>("zipCode") };
+                           select new { ID = c["id"], IdNo = c["idno"], Swd = c["swd"], Descr = c["descrOperLang"], ZipCode = c.Field<Int32>("zipCode") }).ToList();
 
-            Assert.AreEqual(3, contacts.ToList().Count());
-            Assert.AreEqual("ML Hannover - Volksauto AG, 38440 Wolfsburg", contacts.ToList().First().Descr);
-            Assert.AreEqual(38440, contacts.ToList().First().ZipCode);
+            Assert.AreEqual(3, contacts.Count());
+            Assert.AreEqual("ML Hannover - Volksauto AG, 38440 Wolfsburg", contacts.First().Descr);
+            Assert.AreEqual(30419, contacts.First().ZipCode);
+        }
+
+        [TestMethod]
+        public void QueryAndSelectWithSubType() {
+            var contact = (from c in ctx.Get(0, 1)
+                           where 70032 == c.Field<Int32>("idno")
+                           select new {
+                               ID = c["id"],
+                               IdNo = c["idno"],
+                               Swd = c["swd"],
+                               Descr = c["descrOperLang"],
+                               Location = new {
+                                   ZipCode = c.Field<Int32>("zipCode"),
+                                   Town = c["town"],
+                                   Street = c["street"]
+                               }
+                           }).ToList().First();
+
+            Assert.AreEqual("70032", contact.IdNo);
+            Assert.AreEqual("Volksauto AG, 38440 Wolfsburg", contact.Descr);
+            Assert.AreEqual(38440, contact.Location.ZipCode);
+            Assert.AreEqual("Wolfsburg", contact.Location.Town);
+            Assert.AreEqual("Hannover Ring 2", contact.Location.Street);
+        }
+
+        [TestMethod]
+        public void QuerySelectBeforeWhere() {
+            var customer = ctx.Get(0, 1).Select(c =>
+                           new {
+                               Name = c["descrOperLang"],
+                               Location = new {
+                                   ZipCode = c["zipCode"],
+                                   Town = c["town"],
+                                   Street = c["street"]
+                               }
+                           }
+                          ).Where(x => x.Location.Town == "Wolfsburg").ToList().First();
+                                                     
+            Assert.AreEqual("Volksauto AG, 38440 Wolfsburg", customer.Name);
+            Assert.AreEqual("38440", customer.Location.ZipCode);
+            Assert.AreEqual("Wolfsburg", customer.Location.Town);
+            Assert.AreEqual("Hannover Ring 2", customer.Location.Street);
         }
 
         [TestCleanup]

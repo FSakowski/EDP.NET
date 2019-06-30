@@ -231,7 +231,7 @@ namespace EDPDotNet.EPI {
             throw new EPIException("server response contains no data about the requested option value");
         }
 
-        public Queue<EPICommand> ExecuteQuery(string select, uint actionId, string fieldList, int limit, int offset, string varLang) {
+        public Queue<EPICommand> ExecuteQuery(string select, uint actionId, string fieldList, bool withMetaData, int limit, int offset, string varLang) {
             if (fieldList == null)
                 throw new ArgumentNullException("fieldList");
 
@@ -247,8 +247,8 @@ namespace EDPDotNet.EPI {
                .AddField(String.Empty) // Edit FieldName
                .AddField(String.Empty) // Timeout
                // Metadaten nur dann aktivieren, wenn keine Feldliste vorhanden ist
-               .AddField("1")
-               // .AddField(String.IsNullOrEmpty(fieldList) ? "1" : "0")
+               // .AddField("1")
+               .AddField(String.IsNullOrEmpty(fieldList) ? "1" : withMetaData ? "1" : "0")
                .AddField(varLang)
                .Build();
 

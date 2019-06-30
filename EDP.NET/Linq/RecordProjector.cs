@@ -58,10 +58,10 @@ namespace EDPDotNet.Linq {
 
                 if (!String.IsNullOrEmpty(fieldName)) {
                     if (!list.Contains(fieldName))
-                        list.Add(fieldName);
+                        list.Add(fieldName); 
 
                     return Expression.Convert(Expression.Call(row, miGetValue,
-                        Expression.Constant(fieldName)), methodExpr.Type);
+                        Expression.Constant(fieldName), Expression.Constant(methodExpr.Type)), methodExpr.Type);
                 }
 
                 return base.VisitMethodCall(methodExpr);

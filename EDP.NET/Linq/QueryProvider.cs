@@ -72,10 +72,9 @@ namespace EDPDotNet.Linq {
                     null);
 
             } else {
-                if (elementType == typeof(Record)) {
+                if (expression.Type == typeof(Record)) {
                     return query.GetFirstRecord();
                 } else {
-                    elementType = TypeSystem.GetElementType(expression.Type);
                     if (elementType == typeof(Record))
                         return new RecordReader(query);
                     else

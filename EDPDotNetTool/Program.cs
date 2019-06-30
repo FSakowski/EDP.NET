@@ -6,10 +6,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Linq;
+using System.Collections;
 
 namespace EDPDotNet.Tool {
-    class Program {
+    public class Program {
         static void Main(string[] args) {
+            
         }
     }
 }

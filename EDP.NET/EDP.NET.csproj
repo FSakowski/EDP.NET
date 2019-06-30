@@ -7,8 +7,8 @@
     <Authors>Florian Sakowski</Authors>
     <Company />
     <Product>EDP.NET</Product>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
     <Copyright>https://github.com/FSakowski/EDP.NET</Copyright>
     <PackageLicenseUrl>https://github.com/FSakowski/EDP.NET</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/FSakowski/EDP.NET</PackageProjectUrl>

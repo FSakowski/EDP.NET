@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace EDPDotNet.Linq {
     internal class ProjectionReader<T> : IEnumerable<T>, IEnumerable {
@@ -36,7 +37,7 @@ namespace EDPDotNet.Linq {
 
             int index = 0;
 
-            DataSet data;
+            List<Record> data;
 
             Func<ProjectionRow, T> projector;
 
@@ -45,11 +46,11 @@ namespace EDPDotNet.Linq {
                 this.projector = projector;
             }
 
-            public override object GetValue(string field) {
+            public override object GetValue(string field, Type type) {
                 if (String.IsNullOrEmpty(field))
                     throw new IndexOutOfRangeException();
 
-                return record[field];
+                return Convert.ChangeType(record[field], type);
             }
 
             public T Current => current;
@@ -57,22 +58,16 @@ namespace EDPDotNet.Linq {
             object IEnumerator.Current => current;
 
             public void Dispose() {
-                query.Reset();
+                query.Dispose();
             }
 
             public bool MoveNext() {
                 if (data == null) {
-                    ReadNextDataSet();
+                    ReadData();
                 }
 
                 if (index >= data.Count) {
-                    if (query.EndOfData)
-                        return false;
-
-                    ReadNextDataSet();
-
-                    if (data.Count == 0)
-                        return false;
+                    return false;
                 }
 
                 record = data[index];
@@ -81,13 +76,13 @@ namespace EDPDotNet.Linq {
                 return true;
             }
 
-            private void ReadNextDataSet() {
-                data = query.Execute();
+            private void ReadData() {
+                data = query.ToList();
                 index = 0;
             }
 
             public void Reset() {
-                query.Reset();
+                query.BreakExecution();
             }
         }
     }

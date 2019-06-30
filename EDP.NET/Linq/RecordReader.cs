@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace EDPDotNet.Linq {
     internal class RecordReader : IEnumerable<Record>, IEnumerable {
@@ -34,7 +34,7 @@ namespace EDPDotNet.Linq {
 
             int index = 0;
 
-            DataSet data;
+            List<Record> data;
 
             internal Enumerator(Query query) {
                 this.query = query;
@@ -45,7 +45,7 @@ namespace EDPDotNet.Linq {
             object IEnumerator.Current => current;
 
             public void Dispose() {
-                query.Reset();
+                query.BreakExecution();
             }
 
             public bool MoveNext() {
@@ -54,13 +54,7 @@ namespace EDPDotNet.Linq {
                 }
 
                 if (index >= data.Count) {
-                    if (query.EndOfData)
-                        return false;
-
-                    ReadNextDataSet();
-
-                    if (data.Count == 0)
-                        return false;
+                    return false;
                 }
 
                 current = data[index];
@@ -69,12 +63,12 @@ namespace EDPDotNet.Linq {
             }
 
             private void ReadNextDataSet() {
-                data = query.Execute();
+                data = query.ToList();
                 index = 0;
             }
 
             public void Reset() {
-                query.Reset();
+                query.BreakExecution();
             }
         }
     }
