@@ -110,10 +110,11 @@ namespace EDPDotNet {
          * Bricht eine bereits gestartete Abfrage ab.
          **/
         public void BreakExecution() {
-            if (!reader.EndOfData) {
+            if (executed && !reader.EndOfData) {
                 connection.BreakQueryExecution(ActionId);
             }
 
+            reader.Reset();
             executed = false;
         }
 
@@ -140,7 +141,6 @@ namespace EDPDotNet {
             if (!disposed) {
                 if (disposing) {
                     BreakExecution();
-                    reader.Reset();
                 }
 
                 disposed = true;

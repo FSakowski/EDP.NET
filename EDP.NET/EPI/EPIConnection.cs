@@ -282,8 +282,9 @@ namespace EDPDotNet.EPI {
 
             stream.Write(brq);
 
-            if (stream.Read() != EPIResponseType.Data)
-                throw new EPIException("break query execution failed", stream.ResultMessage);
+            // Laut Protokoll sollte ein EOD erfolgen, das passiert aber offenbar nicht
+            // if (stream.Read() != EPIResponseType.Data)
+            //     throw new EPIException("break query execution failed", stream.ResultMessage);
         }
 
         private EPICommand CreateChangeMandantCommand() {

@@ -82,6 +82,26 @@ namespace EDP.NET_Test {
             Assert.AreEqual("22113", list[3]["zipCode"]);
         }
 
+        [TestMethod]
+        public void QueryAndBreakExecution() {
+            Selection sel = new Selection(2, 1);
+            sel.FilingMode = FilingMode.Active;
+            sel.PageSize = 5;
+            sel.Paging = true;
+            sel.OrderField = "idno";
+            sel.FieldList.Add("idno");
+            sel.FieldList.Add("swd");
+            sel.FieldList.Add("descrOperLang");
+
+            Query query = ctx.CreateQuery(sel);
+
+            Record r = query.GetFirstRecord();
+            Assert.AreEqual("10002", r["idno"]);
+
+            Record r2 = query.GetFirstRecord();
+            Assert.AreEqual("10002", r2["idno"]);
+        }
+
         [TestCleanup]
         public void Cleanup() {
             ctx.Dispose();
